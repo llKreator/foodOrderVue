@@ -19,7 +19,7 @@ export const store = new Vuex.Store({
   state: {
     shops: {},
     cart: [],
-    orders: {},
+    orders: [],
     client: {}
   },
   mutations: {
@@ -33,14 +33,39 @@ export const store = new Vuex.Store({
       state.cart.splice(index, 1)
     },
     authenticate (state, client) {
-      state.client = {...client}
+      state.client = { ...client }
+    },
+    signOut (state) {
+      firebase.auth().signOut()
+      state.client = {}
+    },
+    buy (state) {
+      const newOrderKey = firebase
+        .database()
+        .ref('/')
+        .child('orders')
+        .push().key
+      const addOrder = {
+        ['/orders/' + newOrderKey]: {
+          client: { name: state.client.name, email: state.client.email },
+          products: [...state.cart]
+        }
+      }
+      firebase
+        .database()
+        .ref()
+        .update(addOrder)
+    },
+    setDefaultOrders (state, orders) {
+      for (let i in orders) {
+        state.orders.push({id: i, client: orders[i].client, products: orders[i].products})
+      }
+    },
+    deleteOrder (state, id) {
+      const delOrder = {['/orders/' + id]: null}
+      firebase.database().ref().update(delOrder)
+      state.orders.splice(state.orders.indexOf(id), 1)
     }
-    // buy (state) {
-    //   const newOrderKey = firebase.database().ref('/TESTIRUU').child('orders').push().key
-    //   let addOrder = {}
-    //   addOrder['/TESTIRUU/orders/' + newOrderKey] = order
-    //   firebase.database().ref().update(addOrder)
-    // }
   },
   actions: {
     async defaultSetShops ({ commit }) {
@@ -52,21 +77,45 @@ export const store = new Vuex.Store({
           .then(snapshot => snapshot.val())
       )
     },
-    async auth ({commit}) {
+
+    async auth ({ dispatch, commit }) {
       const provider = new firebase.auth.GoogleAuthProvider()
       provider.setCustomParameters({
-        'login_hint': 'user@example.com'
+        login_hint: 'user@example.com'
       })
       let temp = null
-      await firebase.auth().signInWithPopup(provider).then(function (result) {
-        temp = { name: result.user.displayName, email: result.user.email, admin: result.user.email === 'moj@email.com' }
-      })
+      await firebase
+        .auth()
+        .signInWithPopup(provider)
+        .then(function (result) {
+          temp = {
+            name: result.user.displayName,
+            email: result.user.email,
+            admin: result.user.email === 'adobrohval@gmail.com'
+          }
+        }).then(() => {
+          if (temp.admin) {
+            return dispatch('getOrdersFromDB')
+          }
+        })
       commit('authenticate', temp)
+    },
+
+    async getOrdersFromDB ({commit}) {
+      const orders = await firebase.database().ref('/').once('value').then(snapshot => snapshot.val().orders)
+      commit('setDefaultOrders', orders)
     }
   },
   getters: {
     modalList: state => {
-      return state.cart
+      if (state.client.admin) {
+        return state.orders
+      } else if (!state.client.admin && state.client.admin !== undefined) {
+        return state.cart
+      }
+    },
+    cartIsEmpty: state => {
+      return Boolean(state.cart.length)
     }
   }
 })
