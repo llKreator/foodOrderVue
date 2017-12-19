@@ -35,18 +35,22 @@ export const store = new Vuex.Store({
     authenticate (state, client) {
       state.client = { ...client }
     },
+    addShop (state, payload) {
+      let newShop = {}; let products = []
+      for (let i = 0; i < payload.products.length; i++) {
+        newShop['/shops/' + payload.name + '/' + i] = payload.products[i].product
+        products.push(payload.products[i].product)
+      }
+      firebase.database().ref().update(newShop)
+      state.shops[payload.name] = [...products]
+    },
     signOut (state) {
       firebase.auth().signOut()
       state.client = {}
     },
     buy (state) {
-      const newOrderKey = firebase
-        .database()
-        .ref('/')
-        .child('orders')
-        .push().key
       const addOrder = {
-        ['/orders/' + newOrderKey]: {
+        ['/orders/' + state.client.email.split('.').join('')]: {
           client: { name: state.client.name, email: state.client.email },
           products: [...state.cart]
         }

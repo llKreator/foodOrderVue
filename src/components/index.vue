@@ -17,8 +17,8 @@
                   <v-btn v-if="isSignedIn && ! isAdmin" color="success" @click="toCart(product)">To cart</v-btn>
                 </v-card-text>
               </v-card>
-              <v-btn v-if="!client" color="primary">edit</v-btn>
             </v-expansion-panel-content>
+            <v-btn @click="editShop(index)" v-if="isAdmin" color="primary">edit</v-btn>
           </v-flex>
         </v-layout>
       </v-expansion-panel>
@@ -54,13 +54,13 @@
       </div>
     </v-dialog>
     <v-dialog v-model="orderConfirmDelete">
-      <v-btn @click="orderDelete()" color="primary">Confirm</v-btn>
+      <v-btn @click="orderDelete(); orderConfirmDelete=false" color="primary">Confirm</v-btn>
     </v-dialog>
         <v-btn v-if="isAdmin" @click="showAddShop = true" fab dark color="indigo">
           <v-icon dark>add</v-icon>
         </v-btn>
     <v-dialog v-model="showAddShop">
-      <add-and-edit-shop></add-and-edit-shop>
+      <add-and-edit-shop @closeModal="closeShowAddShop" :shopToEdit="shopToEdit"></add-and-edit-shop>
     </v-dialog>
   </div>
 </template>
@@ -77,7 +77,8 @@ export default {
       showOrders: false,
       orderConfirmDelete: false,
       orderToDel: null,
-      showAddShop: false
+      showAddShop: false,
+      shopToEdit: null
     }
   },
   components: {
@@ -140,6 +141,13 @@ export default {
     },
     orderDelete () {
       this.$store.commit('deleteOrder', this.orderToDel)
+    },
+    closeShowAddShop () {
+      this.showAddShop = false
+    },
+    editShop (shopName) {
+      // alert(shopName)
+      this.shopToEdit = this.shops[shopName]
     }
   },
 
