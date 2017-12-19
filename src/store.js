@@ -55,6 +55,7 @@ export const store = new Vuex.Store({
         .database()
         .ref()
         .update(addOrder)
+      state.cart = []
     },
     setDefaultOrders (state, orders) {
       for (let i in orders) {

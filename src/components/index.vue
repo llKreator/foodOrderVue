@@ -26,9 +26,12 @@
     <!-- CART -->
     <v-dialog v-model="showCart" transition="dialog-bottom-transition" max-width="500px">
       <div class="modalTitle">{{wordOrdersOrCart}}</div>
-      <div v-for="(product, index) in modalList" :key="index">{{product}}
-        <v-btn @click="delFromCart(index)" color="warning">Delete</v-btn>
-      </div>
+      <v-card>
+        <v-card-text v-for="(product, index) in modalList" :key="index">
+          {{product}}
+          <v-btn @click="delFromCart(index)" color="warning">Delete</v-btn>
+        </v-card-text>
+      </v-card>
       <v-btn v-if="isSignedIn && !isAdmin" @click="buy()" color="primary">Buy</v-btn>
     </v-dialog>
     <!-- ORDERS -->
@@ -38,7 +41,7 @@
         <v-expansion-panel>
           <v-expansion-panel-content>
             <div slot="header">
-              <div class="orderClientInfo">{{`${order.client.name} (${order.client.email})`}}</div>
+              <div v-if="showOrders" class="orderClientInfo">{{`${order.client.name} (${order.client.email})`}}</div>
             </div>
             <v-card>
               <v-card-text v-for="(product, index) in order.products" :key="index">
@@ -53,10 +56,18 @@
     <v-dialog v-model="orderConfirmDelete">
       <v-btn @click="orderDelete()" color="primary">Confirm</v-btn>
     </v-dialog>
+        <v-btn v-if="isAdmin" @click="showAddShop = true" fab dark color="indigo">
+          <v-icon dark>add</v-icon>
+        </v-btn>
+    <v-dialog v-model="showAddShop">
+      <add-and-edit-shop></add-and-edit-shop>
+    </v-dialog>
   </div>
 </template>
 
 <script>
+import AddAndEditShop from './addAndEditShop.vue'
+
 export default {
   data () {
     return {
@@ -65,8 +76,12 @@ export default {
       showCart: false,
       showOrders: false,
       orderConfirmDelete: false,
-      orderToDel: null
+      orderToDel: null,
+      showAddShop: false
     }
+  },
+  components: {
+    AddAndEditShop
   },
   computed: {
     modalList: function () {
@@ -106,6 +121,7 @@ export default {
           throw new Error("Can't buy with empty cart")
         }
         this.$store.commit('buy')
+        this.showCart = false
       } catch (error) {
         alert(error.message)
       }
